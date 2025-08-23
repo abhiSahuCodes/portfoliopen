@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+public/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Coverage / tests
+coverage/
+.nyc_output/
+
+# Caches
+.cache/
+.parcel-cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
