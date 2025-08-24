@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database.js");
+const { errorHandler } = require("./middleware/errorHandler.js");
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +33,9 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Error handling middleware
+app.use(errorHandler);
 
 // 404 handler
 app.use("*", (req, res) => {
