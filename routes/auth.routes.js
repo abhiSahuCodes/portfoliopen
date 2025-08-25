@@ -5,7 +5,7 @@ const authController = require("../controllers/auth.controller.js");
 
 const router = express.Router();
 
-// Desc     -   Register user
+// Desc     -    Register user
 // Route     -   POST /api/auth/register
 // Access    -   Public
 router.post(
