@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/database.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
 const authRoutes = require("./routes/auth.routes.js");
+const portfolioRoutes = require('./routes/portfolio.routes.js');
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/portfolios', portfolioRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
