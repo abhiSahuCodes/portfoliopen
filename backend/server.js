@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
+const authRoutes = require("./routes/auth.routes.js");
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +25,9 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
