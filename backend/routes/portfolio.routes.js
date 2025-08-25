@@ -1,7 +1,7 @@
 const express = require("express");
 const { body } = require("express-validator");
 const { protect, optionalAuth } = require("../middleware/auth.js");
-const portfolioController = require("../controllers/portfolioController.js");
+const portfolioController = require("../controllers/portfolio.controller.js");
 
 const router = express.Router();
 
