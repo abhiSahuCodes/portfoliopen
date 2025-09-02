@@ -1,10 +1,10 @@
 // Load environment variables
+const dotenv = require("dotenv");
 dotenv.config();
 
 // Import dependencies
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const session = require("express-session");
 const connectDB = require("./config/database.js");
 const passport = require("./config/passport.js");

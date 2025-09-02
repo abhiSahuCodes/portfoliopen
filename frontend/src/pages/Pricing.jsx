@@ -183,7 +183,7 @@ const PricingPage = () => {
                 <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Pro</h3>
                 <p className="mt-4 text-gray-500 dark:text-gray-300">For professionals who want the best</p>
                 <p className="mt-8">
-                  <span className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">$9.99</span>
+                  <span className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">Rs. 900</span>
                   <span className="text-base font-medium text-gray-500 dark:text-gray-300">/month</span>
                 </p>
                 <div className="mt-8 space-y-4">

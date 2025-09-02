@@ -1,4 +1,4 @@
-const AIService = require('../services/aiService');
+const AIService = require('../services/ai.service');
 const User = require('../models/User');
 
 // Lazy-load AIService to ensure environment variables are loaded
