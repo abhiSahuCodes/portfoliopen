@@ -1,5 +1,6 @@
 const express = require("express");
 const { body } = require("express-validator");
+const passport = require("passport");
 const { protect } = require("../middleware/auth.js");
 const authController = require("../controllers/auth.controller.js");
 
@@ -76,5 +77,26 @@ router.put("/upgrade", protect, authController.upgrade);
 // Route     -   PUT /api/auth/downgrade
 // Access    -   Private
 router.put("/downgrade", protect, authController.downgrade);
+
+// Desc      -   Google OAuth authentication
+// Route     -   GET /api/auth/google
+// Access    -   Public
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
+);
+
+// Desc      -   Google OAuth callback
+// Route     -   GET /api/auth/google/callback
+// Access    -   Public
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=oauth_failed`,
+  }),
+  authController.googleCallback
+);
 
 module.exports = router;

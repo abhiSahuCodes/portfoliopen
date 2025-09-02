@@ -1,14 +1,17 @@
+// Load environment variables
+dotenv.config();
+
+// Import dependencies
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const session = require("express-session");
 const connectDB = require("./config/database.js");
+const passport = require("./config/passport.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
 const authRoutes = require("./routes/auth.routes.js");
 const portfolioRoutes = require("./routes/portfolio.routes.js");
 const aiRoutes = require("./routes/ai.routes.js");
-
-// Load environment variables
-dotenv.config();
 
 // Create Express app
 const app = express();
@@ -21,12 +24,30 @@ connectDB();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173" || "http://localhost:5174",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "fallback-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.use("/api/auth", authRoutes);

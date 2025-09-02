@@ -1,11 +1,11 @@
-const jwt = require('jsonwebtoken');
-const { validationResult } = require('express-validator');
-const User = require('../models/User.js');
+const jwt = require("jsonwebtoken");
+const { validationResult } = require("express-validator");
+const User = require("../models/User.js");
 
 // Generate JWT Token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || 'fallback-secret', {
-    expiresIn: process.env.JWT_EXPIRE || '30d'
+  return jwt.sign({ userId }, process.env.JWT_SECRET || "fallback-secret", {
+    expiresIn: process.env.JWT_EXPIRE || "30d",
   });
 };
 
@@ -16,8 +16,8 @@ const register = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+        message: "Validation failed",
+        errors: errors.array(),
       });
     }
 
@@ -27,7 +27,7 @@ const register = async (req, res, next) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email'
+        message: "User already exists with this email",
       });
     }
 
@@ -36,14 +36,14 @@ const register = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        subscription: user.subscription
-      }
+        subscription: user.subscription,
+      },
     });
   } catch (error) {
     next(error);
@@ -57,18 +57,18 @@ const login = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+        message: "Validation failed",
+        errors: errors.array(),
       });
     }
 
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
@@ -76,7 +76,7 @@ const login = async (req, res, next) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
@@ -84,16 +84,55 @@ const login = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        subscription: user.subscription
-      }
+        subscription: user.subscription,
+      },
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// Google OAuth callback handler
+const googleCallback = async (req, res, next) => {
+  try {
+    console.log("Google OAuth callback - User:", req.user);
+
+    if (!req.user) {
+      console.error("No user found in Google OAuth callback");
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/login?error=oauth_failed`
+      );
+    }
+
+    // Generate JWT token for the authenticated user
+    const token = generateToken(req.user._id);
+
+    console.log("Generated token for user:", req.user.email);
+
+    // Redirect to frontend with token as query parameter
+    // Frontend should extract this token and store it in localStorage/cookies
+    const redirectUrl = `${
+      process.env.FRONTEND_URL
+    }/auth/callback?token=${token}&user=${encodeURIComponent(
+      JSON.stringify({
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        subscription: req.user.subscription,
+        provider: req.user.provider,
+      })
+    )}`;
+
+    console.log("Redirecting to:", redirectUrl);
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("Google OAuth callback error:", error);
     next(error);
   }
 };
@@ -110,8 +149,8 @@ const getMe = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
-        portfolioCount: user.portfolioCount
-      }
+        portfolioCount: user.portfolioCount,
+      },
     });
   } catch (error) {
     next(error);
@@ -125,8 +164,8 @@ const updateProfile = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+        message: "Validation failed",
+        errors: errors.array(),
       });
     }
 
@@ -135,34 +174,33 @@ const updateProfile = async (req, res, next) => {
 
     if (name) updateData.name = name;
     if (email) {
-      const existingUser = await User.findOne({ 
-        email, 
-        _id: { $ne: req.user.id } 
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.user.id },
       });
       if (existingUser) {
         return res.status(400).json({
           success: false,
-          message: 'Email is already taken'
+          message: "Email is already taken",
         });
       }
       updateData.email = email;
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const user = await User.findByIdAndUpdate(req.user.id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
+      message: "Profile updated successfully",
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        subscription: user.subscription
-      }
+        subscription: user.subscription,
+      },
     });
   } catch (error) {
     next(error);
@@ -174,19 +212,19 @@ const upgrade = async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { subscription: 'pro' },
+      { subscription: "pro" },
       { new: true, runValidators: true }
     );
 
     res.json({
       success: true,
-      message: 'Successfully upgraded to Pro subscription',
+      message: "Successfully upgraded to Pro subscription",
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        subscription: user.subscription
-      }
+        subscription: user.subscription,
+      },
     });
   } catch (error) {
     next(error);
@@ -198,23 +236,31 @@ const downgrade = async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { subscription: 'free' },
+      { subscription: "free" },
       { new: true, runValidators: true }
     );
 
     res.json({
       success: true,
-      message: 'Successfully downgraded to Free subscription',
+      message: "Successfully downgraded to Free subscription",
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        subscription: user.subscription
-      }
+        subscription: user.subscription,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { register, login, getMe, updateProfile, upgrade, downgrade };
+module.exports = {
+  register,
+  login,
+  googleCallback,
+  getMe,
+  updateProfile,
+  upgrade,
+  downgrade,
+};
