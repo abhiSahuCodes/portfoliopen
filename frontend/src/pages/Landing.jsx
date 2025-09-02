@@ -932,7 +932,7 @@ const Landing = () => {
           </div>
           <div className="mt-12 border-t border-gray-200 dark:border-gray-700 pt-8">
             <p className="text-base text-gray-400 dark:text-gray-500 text-center">
-              &copy; 2023 PortfolioPen. All rights reserved.
+              &copy; 2025 PortfolioPen. All rights reserved.
             </p>
           </div>
         </div>
