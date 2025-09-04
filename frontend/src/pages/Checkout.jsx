@@ -39,7 +39,7 @@ const Checkout = () => {
       <div
         className="absolute inset-0 -z-10 dark:block hidden"
         style={{
-          backgroundImage: "url('/dark-bg.svg')",
+          backgroundImage: "url('./assets/dark-bg.svg')",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",

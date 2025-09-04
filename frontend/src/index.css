@@ -136,7 +136,7 @@
   }
 
   .dark body {
-    background: url("/dark-bg.svg") no-repeat center center fixed;
+    background: url("./assets/dark-bg.svg") no-repeat center center fixed;
     background-size: cover;
   }
 }

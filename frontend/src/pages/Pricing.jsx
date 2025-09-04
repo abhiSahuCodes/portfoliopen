@@ -65,7 +65,7 @@ const PricingPage = () => {
       <Navbar />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16 relative">
         <div className="absolute inset-0 -z-10 dark:block hidden" style={{
-          backgroundImage: "url('/dark-bg.svg')",
+          backgroundImage: "url('./assets/dark-bg.svg')",
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
