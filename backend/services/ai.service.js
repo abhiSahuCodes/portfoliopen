@@ -1,9 +1,9 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 
 class AIService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY;
-    this.modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    this.modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash-001";
     this._modelChecked = false;
     this._availableModels = null;
 
@@ -12,33 +12,37 @@ class AIService {
         "⚠️  Gemini API key not configured. AI features will be disabled."
       );
       this.genAI = null;
-      this.model = null;
     } else {
-      this.genAI = new GoogleGenerativeAI(this.apiKey);
-      this.model = this.genAI.getGenerativeModel({ model: this.modelName });
+      this.genAI = new GoogleGenAI({ apiKey: this.apiKey });
     }
   }
 
-  // Discover available models for this API key (cached)
+  // Get available models using new SDK
   async listModels(force = false) {
     if (this._availableModels && !force) return this._availableModels;
     if (!this.genAI) return [];
 
     try {
-      const models = await this.genAI.listModels();
-      const modelNames = models.map((model) =>
-        model.name.replace("models/", "")
-      );
+      const response = await this.genAI.models.list();
+      const modelNames = response.models ? response.models.map((model) => model.name || model.id || model) : [];
       this._availableModels = modelNames;
       return modelNames;
     } catch (e) {
       console.error("Failed to list models:", e.message);
-      // If listing fails, don't block normal usage; return empty
-      return [];
+      // Fallback to predefined list if API call fails
+      const fallbackModels = [
+        "gemini-2.0-flash-001",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b", 
+        "gemini-1.5-pro",
+        "gemini-1.0-pro"
+      ];
+      this._availableModels = fallbackModels;
+      return fallbackModels;
     }
   }
 
-  // Ensure we pick a model that is actually available
+  // Ensure to pick a model that is actually available
   async ensureModelAvailability() {
     if (this._modelChecked) return this.model;
     this._modelChecked = true;
@@ -60,32 +64,29 @@ class AIService {
     return this.model;
   }
 
-  async makeRequest(prompt, maxTokens = 500) {
-    if (!this.model) {
-      const err = new Error("Gemini API key not configured");
-      err.status = 500;
-      err.code = "CONFIG_MISSING";
-      throw err;
+  async makeRequest(prompt, options = {}) {
+    if (!this.genAI) {
+      throw new Error("AI service not properly initialized");
     }
 
     try {
-      // Ensure selected model is available (first call only)
       await this.ensureModelAvailability();
 
       const generationConfig = {
-        maxOutputTokens: maxTokens,
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40,
+        temperature: options.temperature || 0.7,
+        topP: options.topP || 0.8,
+        topK: options.topK || 40,
+        maxOutputTokens: options.maxTokens || 1000,
+        ...options.generationConfig,
       };
 
-      const result = await this.model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig,
+      const result = await this.genAI.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: generationConfig,
       });
 
-      const response = await result.response;
-      const content = response.text();
+      const content = result.text;
 
       if (!content || content.trim().length === 0) {
         const err = new Error("AI service returned empty content");
@@ -192,7 +193,7 @@ Strict output rules:
 
 Enhance this ${context}: ${userInput}`;
 
-    const raw = await this.makeRequest(prompt, 350);
+    const raw = await this.makeRequest(prompt, { maxTokens: 350 });
     return this.sanitizeEnhancedText(raw, 40, 80);
   }
 
@@ -231,7 +232,7 @@ ${
 }`;
 
     try {
-      const response = await this.makeRequest(skillsPrompt, 200);
+      const response = await this.makeRequest(skillsPrompt, { maxTokens: 200 });
       // Extract a JSON array from the response
       let text = response.trim();
       const match = text.match(/\[[\s\S]*\]/);

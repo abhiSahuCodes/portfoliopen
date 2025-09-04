@@ -23,7 +23,10 @@ connectDB();
 
 // Middleware
 app.use(
-  cors({})
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
