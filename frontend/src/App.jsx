@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./components/theme/ThemeProvider";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import AuthCallback from "./pages/authcallback";
+import AuthCallback from "./pages/AuthCallback";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";

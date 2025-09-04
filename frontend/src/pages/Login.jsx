@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux';
 import { login } from '../lib/redux/slices/authSlice';
 import { useToast } from '../hooks/use-toast';
 import Navbar from '../components/common/Navbar';
-import GoogleOAuthButton from '../components/GoogleOAuthButton';
+import GoogleOAuthButton from '@/components/GoogleOAuthButton';
 import { useMutation } from '@tanstack/react-query';
 import { apiLogin } from '../lib/api/auth';
 

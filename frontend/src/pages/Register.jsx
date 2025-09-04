@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { register as registerAction } from "../lib/redux/slices/authSlice";
 import { useToast } from "../hooks/use-toast";
-
-import GoogleOAuthButton from "../components/GoogleOAuthButton";
+import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 import { useMutation } from "@tanstack/react-query";
 import { apiRegister } from "../lib/api/auth";
 import Navbar from "@/components/common/Navbar";
