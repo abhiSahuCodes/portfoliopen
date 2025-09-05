@@ -52,7 +52,8 @@ const Dashboard = () => {
       // Extract portfolio from response object
       const newPortfolio = response.portfolio || response;
       dispatch(loadPortfolio(newPortfolio));
-      navigate("/editor");
+      const id = newPortfolio._id || newPortfolio.id;
+      navigate(`/editor/${id}`);
       toast({
         title:
           newPortfolio.sections?.length > 0
@@ -132,7 +133,8 @@ const Dashboard = () => {
 
   const handleLoadPortfolio = (portfolio) => {
     dispatch(loadPortfolio(portfolio));
-    navigate("/editor");
+    const id = portfolio._id || portfolio.id;
+    navigate(`/editor/${id}`);
   };
 
   const handlePreviewPortfolio = (portfolio) => {
