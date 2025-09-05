@@ -28,7 +28,6 @@ const App = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            {/* Updated editor route to be ID-driven */}
             <Route path="/editor/:id" element={<ProtectedRoute><Editor /></ProtectedRoute>} />
             <Route path="/features" element={<Features />} />
             <Route path="/pricing" element={<PricingPage />} />
