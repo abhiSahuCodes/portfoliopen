@@ -35,4 +35,12 @@ export const post = (path, body, options = {}) => request(path, { method: 'POST'
 export const put = (path, body, options = {}) => request(path, { method: 'PUT', body, ...options });
 export const del = (path, options = {}) => request(path, { method: 'DELETE', ...options });
 
+export const uploadFile = (path, formData) => {
+  return fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: withAuthHeaders(), // Do not set Content-Type; the browser will set multipart boundary
+    body: formData,
+  }).then(handleResponse);
+};
+
 export const apiBaseUrl = BASE_URL;

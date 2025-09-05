@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { uploadFile } from '@/lib/api/client';
 
 const ProjectForm = ({ project, onSave, onCancel }) => {
   const [formData, setFormData] = useState(project || {
@@ -9,6 +10,7 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
     image: '',
     link: '',
   });
+  const [uploading, setUploading] = useState(false);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -19,14 +21,25 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
     }));
   };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
+  const handleUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await uploadFile('/api/upload/image', fd);
+      setFormData(prev => ({ ...prev, image: res.url }));
+    } catch (err) {
+      console.error('Upload failed', err);
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 border border-gray-200 rounded-md p-4 bg-gray-50">
+    <div className="space-y-4 border border-gray-200 rounded-md p-4 bg-gray-50">
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           Project Title
@@ -68,6 +81,10 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
           onChange={handleChange}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
+        <div className="mt-2 flex items-center space-x-2">
+          <input type="file" accept="image/*" onChange={handleUpload} />
+          {uploading && <span className="text-sm text-gray-500">Uploading...</span>}
+        </div>
       </div>
       
       <div>
@@ -93,13 +110,14 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
           Cancel
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={() => onSave(formData)}
           className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           Save
         </button>
       </div>
-    </form>
+    </div>
   );
 };
 
@@ -298,7 +316,7 @@ const ProjectsSection = ({ section, onUpdate }) => {
           type="button"
           className="bg-white text-indigo-600 py-2 px-4 rounded-md shadow-sm text-sm font-medium"
         >
-          Edit Projects Section
+          Edit Projects
         </button>
       </div>
     </div>

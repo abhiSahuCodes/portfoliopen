@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
+import { uploadFile } from '@/lib/api/client';
 
 const HeaderSection = ({ section, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(section.content);
+  const [uploading, setUploading] = useState(false);
 
 // Handle for change
   const handleChange = (e) => {
@@ -12,6 +14,23 @@ const HeaderSection = ({ section, onUpdate }) => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await uploadFile('/api/upload/image', fd);
+      setFormData(prev => ({ ...prev, image: res.url }));
+    } catch (err) {
+      console.error('Upload failed', err);
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Handle for submit
@@ -80,6 +99,10 @@ const HeaderSection = ({ section, onUpdate }) => {
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
+              <div className="mt-2 flex items-center space-x-2">
+                <input type="file" accept="image/*" onChange={handleUpload} />
+                {uploading && <span className="text-sm text-gray-500">Uploading...</span>}
+              </div>
             </div>
             
             <div className="flex justify-end space-x-3 pt-4">

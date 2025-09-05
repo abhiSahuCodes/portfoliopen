@@ -12,6 +12,7 @@ const { errorHandler } = require("./middleware/errorHandler.js");
 const authRoutes = require("./routes/auth.routes.js");
 const portfolioRoutes = require("./routes/portfolio.routes.js");
 const aiRoutes = require("./routes/ai.routes.js");
+const uploadRoutes = require("./routes/upload.routes.js");
 
 // Create Express app
 const app = express();
@@ -53,6 +54,7 @@ app.use(passport.session());
 app.use("/api/auth", authRoutes);
 app.use("/api/portfolios", portfolioRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
