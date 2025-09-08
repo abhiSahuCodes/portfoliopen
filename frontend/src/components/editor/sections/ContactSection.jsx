@@ -35,11 +35,11 @@ const ContactSection = ({ section, onUpdate }) => {
 
   if (isEditing) {
     return (
-      <div className="bg-white border border-gray-300 shadow-sm rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm rounded-lg p-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Section Title
               </label>
               <input
@@ -48,12 +48,12 @@ const ContactSection = ({ section, onUpdate }) => {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email
               </label>
               <input
@@ -62,12 +62,12 @@ const ContactSection = ({ section, onUpdate }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Phone
               </label>
               <input
@@ -76,16 +76,16 @@ const ContactSection = ({ section, onUpdate }) => {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div className="pt-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Social Links</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Social Links</h3>
               
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="social.twitter" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="social.twitter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Twitter
                   </label>
                   <input
@@ -94,12 +94,12 @@ const ContactSection = ({ section, onUpdate }) => {
                     name="social.twitter"
                     value={formData.social.twitter}
                     onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="social.linkedin" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="social.linkedin" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     LinkedIn
                   </label>
                   <input
@@ -108,12 +108,12 @@ const ContactSection = ({ section, onUpdate }) => {
                     name="social.linkedin"
                     value={formData.social.linkedin}
                     onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="social.github" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="social.github" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     GitHub
                   </label>
                   <input
@@ -122,7 +122,7 @@ const ContactSection = ({ section, onUpdate }) => {
                     name="social.github"
                     value={formData.social.github}
                     onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>

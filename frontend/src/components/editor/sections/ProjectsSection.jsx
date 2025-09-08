@@ -39,9 +39,9 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
   };
 
   return (
-    <div className="space-y-4 border border-gray-200 rounded-md p-4 bg-gray-50">
+    <div className="space-y-4 border border-gray-200 dark:border-gray-600 rounded-md p-4 bg-gray-50 dark:bg-gray-800">
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Project Title
         </label>
         <input
@@ -51,12 +51,12 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
           value={formData.title}
           onChange={handleChange}
           required
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
       </div>
       
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Description
         </label>
         <textarea
@@ -65,12 +65,12 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
           rows={3}
           value={formData.description}
           onChange={handleChange}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
       </div>
       
       <div>
-        <label htmlFor="image" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Image URL
         </label>
         <input
@@ -79,7 +79,7 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
           name="image"
           value={formData.image}
           onChange={handleChange}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
         <div className="mt-2 flex items-center space-x-2">
           <input type="file" accept="image/*" onChange={handleUpload} />
@@ -88,7 +88,7 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
       </div>
       
       <div>
-        <label htmlFor="link" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="link" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Project Link
         </label>
         <input
@@ -97,7 +97,7 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
           name="link"
           value={formData.link}
           onChange={handleChange}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
       </div>
       
@@ -178,11 +178,11 @@ const ProjectsSection = ({ section, onUpdate }) => {
 
   if (isEditing) {
     return (
-      <div className="bg-white border border-gray-300 shadow-sm rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm rounded-lg p-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div>
-              <label htmlFor="section-title" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="section-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Section Title
               </label>
               <input
@@ -190,13 +190,13 @@ const ProjectsSection = ({ section, onUpdate }) => {
                 id="section-title"
                 value={formData.title}
                 onChange={handleTitleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Projects</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Projects</h3>
                 <button
                   type="button"
                   onClick={handleAddProject}
@@ -220,14 +220,14 @@ const ProjectsSection = ({ section, onUpdate }) => {
               {!isAddingProject && !editingProject && (
                 <div className="space-y-4">
                   {formData.projects.map(project => (
-                    <div key={project.id} className="border border-gray-200 rounded-md p-4 bg-white">
+                    <div key={project.id} className="border border-gray-200 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-700">
                       <div className="flex justify-between">
-                        <h4 className="text-base font-medium text-gray-900">{project.title}</h4>
+                        <h4 className="text-base font-medium text-gray-900 dark:text-gray-100">{project.title}</h4>
                         <div className="flex space-x-2">
                           <button
                             type="button"
                             onClick={() => handleEditProject(project)}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-indigo-300 hover:text-indigo-400"
                           >
                             Edit
                           </button>
@@ -240,7 +240,7 @@ const ProjectsSection = ({ section, onUpdate }) => {
                           </button>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">{project.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{project.description}</p>
                     </div>
                   ))}
                 </div>
