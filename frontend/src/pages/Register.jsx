@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { register as registerAction } from "../lib/redux/slices/authSlice";
 import { useToast } from "../hooks/use-toast";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
+import PasswordInput from "../components/ui/PasswordInput";
 import { useMutation } from "@tanstack/react-query";
 import { apiRegister } from "../lib/api/auth";
 import Navbar from "@/components/common/Navbar";
@@ -24,8 +25,8 @@ const Register = () => {
       localStorage.setItem("token", data.token);
       dispatch(registerAction(data.user));
       toast({
-        title: "Registration successful",
-        description: "Welcome to PortfolioPen!",
+        title: "Welcome to PortfolioPen!",
+        description: `Account created successfully for ${data.user.name}. You're now logged in!`,
       });
       navigate("/dashboard");
       setIsLoading(false);
@@ -33,7 +34,7 @@ const Register = () => {
     onError: (error) => {
       toast({
         title: "Registration failed",
-        description: error.message,
+        description: error.message || "Failed to create account. Please try again.",
         variant: "destructive",
       });
       setIsLoading(false);
@@ -106,6 +107,7 @@ const Register = () => {
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
+                        placeholder="Enter your full name"
                         className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:text-gray-900"
                       />
                     </div>
@@ -127,31 +129,23 @@ const Register = () => {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter a valid email address"
                         className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:text-gray-900"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-400"
-                    >
-                      Password
-                    </label>
-                    <div className="mt-1">
-                      <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autoComplete="new-password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:text-gray-900"
-                      />
-                    </div>
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    name="password"
+                    label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a strong password"
+                    required
+                    autoComplete="new-password"
+                    className="appearance-none placeholder-gray-400"
+                  />
 
                   <div className="flex items-center">
                     <input

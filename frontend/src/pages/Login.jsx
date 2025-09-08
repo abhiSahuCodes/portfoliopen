@@ -6,8 +6,9 @@ import { login } from '../lib/redux/slices/authSlice';
 import { useToast } from '../hooks/use-toast';
 import Navbar from '../components/common/Navbar';
 import GoogleOAuthButton from '@/components/GoogleOAuthButton';
+import PasswordInput from '../components/ui/PasswordInput';
 import { useMutation } from '@tanstack/react-query';
-import { apiLogin } from '../lib/api/auth';
+import { apiLogin, apiForgotPassword } from '../lib/api/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -43,6 +44,37 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     mutation.mutate({ email, password });
+  };
+
+  const [showForgot, setShowForgot] = useState(false);
+  const [fpEmail, setFpEmail] = useState('');
+  const [fpLoading, setFpLoading] = useState(false);
+  const [fpError, setFpError] = useState('');
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    if (!fpEmail.trim()) {
+      setFpError("Please enter your email address");
+      return;
+    }
+    setFpLoading(true);
+    setFpError('');
+    try {
+      await apiForgotPassword({ email: fpEmail });
+      toast({ 
+        title: 'Reset email sent!', 
+        description: 'Check your inbox and spam folder for reset instructions.' 
+      });
+      setShowForgot(false);
+      setFpEmail('');
+      setFpError('');
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to send reset email';
+      toast({ title: 'Request failed', description: errorMessage, variant: 'destructive' });
+      setFpError(errorMessage);
+    } finally {
+      setFpLoading(false);
+    }
   };
 
   return (
@@ -97,28 +129,23 @@ const Login = () => {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        placeholder='Enter your registered email'
                         className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:text-gray-900"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                      Password
-                    </label>
-                    <div className="mt-1">
-                      <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autoComplete="current-password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:text-gray-900"
-                      />
-                    </div>
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    name="password"
+                    label="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    autoComplete="current-password"
+                    className="appearance-none placeholder-gray-400"
+                  />
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -134,7 +161,7 @@ const Login = () => {
                     </div>
 
                     <div className="text-sm">
-                      <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
+                      <a href="#" onClick={(e) => {e.preventDefault(); setShowForgot(true);}} className="font-medium text-indigo-600 hover:text-indigo-500">
                         Forgot your password?
                       </a>
                     </div>
@@ -164,6 +191,37 @@ const Login = () => {
                 </p>
               </div>
             </div>
+            {showForgot && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+                  <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Reset your password</h3>
+                  <form onSubmit={handleForgot} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email address</label>
+                      <input
+                        type="email"
+                        value={fpEmail}
+                        onChange={(e) => setFpEmail(e.target.value)}
+                        required
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:text-gray-900"
+                      />
+                      {fpError && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fpError}</p>
+                      )}
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        💡 Don't forget to check your spam folder if you don't see the email in your inbox.
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => { setShowForgot(false); setFpEmail(''); setFpError(''); }} className="rounded-md border px-4 py-2 text-sm dark:border-gray-600 dark:text-gray-200">Cancel</button>
+                      <button type="submit" disabled={fpLoading} className="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-70">
+                        {fpLoading ? 'Sending...' : 'Send reset link'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

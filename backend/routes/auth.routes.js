@@ -99,4 +99,8 @@ router.get(
   authController.googleCallback
 );
 
+// Forgot / Reset Password
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+
 module.exports = router;
