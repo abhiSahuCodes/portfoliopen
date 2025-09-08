@@ -42,11 +42,11 @@ const HeaderSection = ({ section, onUpdate }) => {
 
   if (isEditing) {
     return (
-      <div className="bg-white border border-gray-300 shadow-sm rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm rounded-lg p-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Name
               </label>
               <input
@@ -55,12 +55,12 @@ const HeaderSection = ({ section, onUpdate }) => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Professional Title
               </label>
               <input
@@ -69,12 +69,12 @@ const HeaderSection = ({ section, onUpdate }) => {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div>
-              <label htmlFor="subtitle" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="subtitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Subtitle/Tagline
               </label>
               <input
@@ -83,12 +83,12 @@ const HeaderSection = ({ section, onUpdate }) => {
                 name="subtitle"
                 value={formData.subtitle}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             
             <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Profile Image URL
               </label>
               <input
@@ -97,7 +97,7 @@ const HeaderSection = ({ section, onUpdate }) => {
                 name="image"
                 value={formData.image}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
               <div className="mt-2 flex items-center space-x-2">
                 <input type="file" accept="image/*" onChange={handleUpload} />
