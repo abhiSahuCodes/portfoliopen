@@ -5,3 +5,5 @@ export const apiRegister = ({ name, email, password }) => post('/api/auth/regist
 export const apiMe = () => get('/api/auth/me');
 export const apiUpgradeSubscription = () => put('/api/auth/upgrade', {});
 export const apiDowngradeSubscription = () => put('/api/auth/downgrade', {});
+export const apiForgotPassword = ({ email }) => post('/api/auth/forgot-password', { email });
+export const apiResetPassword = (payload) => post('/api/auth/reset-password', payload);

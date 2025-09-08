@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useToast } from "../hooks/use-toast";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
+  const { toast } = useToast();
   const [status, setStatus] = useState("processing"); // processing, success, error
   const [message, setMessage] = useState("Processing authentication...");
 
@@ -21,6 +23,11 @@ const AuthCallback = () => {
         if (error) {
           setStatus("error");
           setMessage("Authentication failed. Please try again.");
+          toast({
+            title: "Authentication failed",
+            description: "Google authentication failed. Please try again.",
+            variant: "destructive",
+          });
           setTimeout(() => {
             navigate("/login");
           }, 3000);
@@ -30,6 +37,11 @@ const AuthCallback = () => {
         if (!token || !userParam) {
           setStatus("error");
           setMessage("Invalid authentication response. Please try again.");
+          toast({
+            title: "Authentication failed",
+            description: "Invalid authentication response. Please try again.",
+            variant: "destructive",
+          });
           setTimeout(() => {
             navigate("/login");
           }, 3000);
@@ -48,6 +60,11 @@ const AuthCallback = () => {
 
         setStatus("success");
         setMessage(`Welcome, ${userData.name}! Redirecting to dashboard...`);
+        
+        toast({
+          title: "Welcome to PortfolioPen!",
+          description: `Successfully signed in with Google as ${userData.name}`,
+        });
 
         // Redirect to dashboard after successful authentication
         setTimeout(() => {
@@ -59,6 +76,11 @@ const AuthCallback = () => {
         setMessage(
           "An error occurred during authentication. Please try again."
         );
+        toast({
+          title: "Authentication error",
+          description: "An error occurred during authentication. Please try again.",
+          variant: "destructive",
+        });
         setTimeout(() => {
           navigate("/login");
         }, 3000);

@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../models/User.js");
+const crypto = require('crypto');
+const EmailService = require('../services/email.service');
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -255,6 +257,70 @@ const downgrade = async (req, res, next) => {
   }
 };
 
+// Request password reset - send email with token
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No user found with this email' });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes expiry
+    await user.save({ validateBeforeSave: false });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    const emailSvc = new EmailService();
+    await emailSvc.sendPasswordResetEmail(email, resetUrl);
+
+    return res.json({ success: true, message: 'Password reset email sent' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reset password - verify token and set new password
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, email, password } = req.body;
+
+    if (!token || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Token, email, and new password are required' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({ email }).select('+password +resetPasswordToken +resetPasswordExpires');
+    if (!user || !user.resetPasswordToken || !user.resetPasswordExpires) {
+      return res.status(400).json({ success: false, message: 'Invalid reset request' });
+    }
+
+    if (user.resetPasswordToken !== hashedToken || user.resetPasswordExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Reset token is invalid or has expired' });
+    }
+
+    user.password = password; // will be hashed by pre-save hook
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.json({ success: true, message: 'Password has been reset successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -263,4 +329,6 @@ module.exports = {
   updateProfile,
   upgrade,
   downgrade,
+  forgotPassword,
+  resetPassword,
 };
