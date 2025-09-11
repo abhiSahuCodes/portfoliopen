@@ -17,7 +17,7 @@ const requirePro = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    if (user.subscription !== 'pro') {
+    if (!user.isPro) {
       return res.status(403).json({ success: false, message: 'Pro subscription required for AI features' });
     }
 

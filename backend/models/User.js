@@ -45,6 +45,18 @@ const userSchema = new mongoose.Schema(
       enum: ["free", "pro"],
       default: "free",
     },
+    isPro: {
+      type: Boolean,
+      default: false,
+    },
+    proUpgradeDate: {
+      type: Date,
+    },
+    paymentDetails: {
+      orderId: String,
+      paymentId: String,
+      signature: String,
+    },
     portfolioCount: {
       type: Number,
       default: 0,
