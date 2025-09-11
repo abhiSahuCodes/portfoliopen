@@ -13,6 +13,7 @@ const authRoutes = require("./routes/auth.routes.js");
 const portfolioRoutes = require("./routes/portfolio.routes.js");
 const aiRoutes = require("./routes/ai.routes.js");
 const uploadRoutes = require("./routes/upload.routes.js");
+const paymentRoutes = require("./routes/payment.routes.js");
 
 // Create Express app
 const app = express();
@@ -55,6 +56,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/portfolios", portfolioRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -85,5 +87,7 @@ if (process.env.NODE_ENV !== "test") {
     );
   });
 }
+
+
 
 module.exports = app;

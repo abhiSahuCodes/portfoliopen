@@ -31,3 +31,7 @@ coverage/
 .idea/
 .DS_Store
 Thumbs.db
+
+#ngrok
+ngrok.yml
+ngrok.exe

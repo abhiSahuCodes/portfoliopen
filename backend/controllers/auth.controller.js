@@ -45,6 +45,7 @@ const register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
+        isPro: user.isPro,
       },
     });
   } catch (error) {
@@ -93,6 +94,7 @@ const login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
+        isPro: user.isPro,
       },
     });
   } catch (error) {
@@ -151,6 +153,7 @@ const getMe = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
+        isPro: user.isPro,
         portfolioCount: user.portfolioCount,
       },
     });
@@ -202,6 +205,7 @@ const updateProfile = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
+        isPro: user.isPro,
       },
     });
   } catch (error) {
@@ -214,7 +218,11 @@ const upgrade = async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { subscription: "pro" },
+      { 
+        subscription: "pro",
+        isPro: true,
+        proUpgradeDate: new Date()
+      },
       { new: true, runValidators: true }
     );
 
@@ -226,6 +234,7 @@ const upgrade = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
+        isPro: user.isPro,
       },
     });
   } catch (error) {
@@ -238,7 +247,10 @@ const downgrade = async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { subscription: "free" },
+      { 
+        subscription: "free",
+        isPro: false
+      },
       { new: true, runValidators: true }
     );
 
@@ -250,6 +262,7 @@ const downgrade = async (req, res, next) => {
         name: user.name,
         email: user.email,
         subscription: user.subscription,
+        isPro: user.isPro,
       },
     });
   } catch (error) {

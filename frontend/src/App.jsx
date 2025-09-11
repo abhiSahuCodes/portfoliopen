@@ -15,6 +15,7 @@ import PricingPage from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Checkout from "./pages/Checkout";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => {
             <Route path="/features" element={<Features />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
