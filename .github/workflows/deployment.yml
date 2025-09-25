@@ -3,7 +3,10 @@ name: Deploy (AWS)
 on:
   push:
     branches:
-      - deployment
+      - aws-deploy
+  pull_request:
+    branches:
+      - aws-deploy
 
 permissions:
   id-token: write
@@ -18,7 +21,7 @@ jobs:
       ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}           # e.g., 145400477079.dkr.ecr.ap-south-1.amazonaws.com
       ECR_BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}   # e.g., portfoliopen-backend
       ECR_WEB_REPO: ${{ secrets.ECR_WEB_REPO }}           # e.g., portfoliopen-frontend
-      IMAGE_TAG: deployment-${{ github.sha }}
+      IMAGE_TAG: aws-deploy-${{ github.sha }}
 
     steps:
       - name: Checkout
