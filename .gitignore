@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-package-lock.json
+# Allow lockfiles for reproducible builds
+# package-lock.json
 
 # Environment variables
 .env
