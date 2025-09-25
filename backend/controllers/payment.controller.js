@@ -101,38 +101,37 @@ exports.verifyPayment = async (req, res) => {
 // Webhook handler
 exports.webhook = async (req, res) => {
   try {
-    const webhookSignature = req.headers['x-razorpay-signature'];
-    const webhookBody = JSON.stringify(req.body);
+    const signature = req.headers['x-razorpay-signature'];
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'your_webhook_secret';
 
-    // Verify webhook signature
+    // req.body is a Buffer due to express.raw() middleware on this route
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+
+    // Verify webhook signature against raw payload
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(webhookBody)
+      .update(rawBody)
       .digest('hex');
 
-    if (webhookSignature !== expectedSignature) {
+    if (signature !== expectedSignature) {
       return res.status(400).json({ message: 'Invalid webhook signature' });
     }
 
-    const event = req.body.event;
-    const paymentEntity = req.body.payload.payment.entity;
+    // Safe to parse after signature verified
+    const payload = JSON.parse(rawBody.toString('utf8'));
+    const event = payload.event;
+    const paymentEntity = payload.payload?.payment?.entity;
 
-    console.log('Webhook received:', event, paymentEntity.id);
+    console.log('Webhook received:', event, paymentEntity?.id);
 
     // Handle different webhook events
     switch (event) {
       case 'payment.captured':
-        // Payment was successful
-        console.log('Payment captured:', paymentEntity.id);
-        // Additional logic can be added here
+        console.log('Payment captured:', paymentEntity?.id);
         break;
-      
       case 'payment.failed':
-        // Payment failed
-        console.log('Payment failed:', paymentEntity.id);
+        console.log('Payment failed:', paymentEntity?.id);
         break;
-      
       default:
         console.log('Unhandled webhook event:', event);
     }

@@ -1,4 +1,8 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+export const BASE_URL =
+  import.meta.env.VITE_API_URL ??
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? '' // production: same-origin (use nginx /api proxy)
+    : 'http://localhost:5000'); // development: point to local backend
 
 const withAuthHeaders = (headers = {}) => {
   const token = localStorage.getItem('token');

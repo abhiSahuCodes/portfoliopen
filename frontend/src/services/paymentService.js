@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { BASE_URL } from '../lib/api/client';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = `${BASE_URL}/api`;
 
 // Create axios instance with auth token
 const createAuthenticatedRequest = () => {
