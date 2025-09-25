@@ -1,6 +1,7 @@
 import React from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import { Button } from './ui/button';
+import { BASE_URL } from '../lib/api/client';
 
 const GoogleOAuthButton = ({ 
   text = "Continue with Google", 
@@ -13,7 +14,8 @@ const GoogleOAuthButton = ({
       onClick();
     } else {
       // Redirect to backend Google OAuth endpoint
-      window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google`;
+      // window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google`;
+      window.location.href = `${BASE_URL}/api/auth/google`;
     }
   };
 
