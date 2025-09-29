@@ -22,6 +22,8 @@ jobs:
       ECR_BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}   # e.g., portfoliopen-backend
       ECR_WEB_REPO: ${{ secrets.ECR_WEB_REPO }}           # e.g., portfoliopen-frontend
       IMAGE_TAG: aws-deploy-${{ github.sha }}
+    outputs:
+      image_tag: ${{ steps.set_tag.outputs.image_tag }}
 
     steps:
       - name: Checkout
@@ -54,6 +56,10 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Set image tag output
+        id: set_tag
+        run: echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
       - name: Build & Push Backend (linux/arm64)
         run: |
           docker buildx build \
@@ -71,3 +77,39 @@ jobs:
             -f frontend/Dockerfile \
             ./frontend \
             --push
+
+  deploy-ec2:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}
+      ECR_WEB_REPO: ${{ secrets.ECR_WEB_REPO }}
+      IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+      EC2_REPO_DIR: ${{ secrets.EC2_REPO_DIR }}
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+            ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+            cd ${EC2_REPO_DIR:-/home/ubuntu/portfoliopen}
+            export ECR_REGISTRY=${ECR_REGISTRY}
+            export ECR_BACKEND_REPO=${ECR_BACKEND_REPO}
+            export ECR_WEB_REPO=${ECR_WEB_REPO}
+            export IMAGE_TAG=${IMAGE_TAG}
+            docker compose -f docker-compose.aws.yml pull
+            docker compose -f docker-compose.aws.yml up -d
+            docker compose -f docker-compose.aws.yml ps
