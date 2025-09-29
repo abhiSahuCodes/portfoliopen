@@ -94,6 +94,28 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Resolve SSH fingerprint
+        id: resolve_fp
+        shell: bash
+        env:
+          TARGET_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -euo pipefail
+          echo "Resolving SSH host key fingerprint for ${TARGET_HOST}"
+          FP_LINES=$(ssh-keyscan -4 -t ed25519,rsa -H "${TARGET_HOST}" 2>/dev/null | ssh-keygen -lf -)
+          FP=$(echo "${FP_LINES}" | awk '/ssh-ed25519/ {print $2}' | head -n1)
+          if [ -z "${FP}" ]; then
+            FP=$(echo "${FP_LINES}" | awk '/ssh-rsa/ {print $2}' | head -n1)
+          fi
+          if [ -z "${FP}" ]; then
+            echo "Failed to resolve SSH fingerprint for ${TARGET_HOST}" >&2
+            echo "Debug output:" >&2
+            echo "${FP_LINES}" >&2
+            exit 1
+          fi
+          echo "Resolved fingerprint: ${FP}"
+          echo "fingerprint=${FP}" >> $GITHUB_OUTPUT
+
       - name: Deploy via SSH (hardened)
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -103,7 +125,7 @@ jobs:
           port: 22
           timeout: 120s
           command_timeout: 20m
-          fingerprint: ${{ secrets.EC2_FINGERPRINT }}
+          fingerprint: ${{ steps.resolve_fp.outputs.fingerprint }}
           debug: true
           script: |
             set -euo pipefail
