@@ -94,22 +94,34 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: SSH into EC2 and deploy
+      - name: Deploy via SSH (hardened)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          timeout: 120s
+          command_timeout: 20m
+          fingerprint: ${{ secrets.EC2_FINGERPRINT }}
+          debug: true
           script: |
-            set -e
+            set -euo pipefail
+            # Force IPv4 by using Public IPv4 host in EC2_HOST secret
+            AWS_REGION="${{ env.AWS_REGION }}"
             ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
             ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-            cd ${EC2_REPO_DIR:-/home/ubuntu/portfoliopen}
-            export ECR_REGISTRY=${ECR_REGISTRY}
-            export ECR_BACKEND_REPO=${ECR_BACKEND_REPO}
-            export ECR_WEB_REPO=${ECR_WEB_REPO}
-            export IMAGE_TAG=${IMAGE_TAG}
+            echo "Logging into ECR: ${ECR_REGISTRY}"
+            aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+            cd "${{ secrets.EC2_REPO_DIR }}"
+            # Optionally refresh env from SSM parameters if path is provided
+            if [ -n "${{ secrets.SSM_PATH_BACKEND }}" ]; then
+              bash ./deploy/scripts/fetch_env.sh --ssm-path "${{ secrets.SSM_PATH_BACKEND }}" --region "${AWS_REGION}"
+            fi
+            export ECR_REGISTRY="${ECR_REGISTRY}"
+            export ECR_BACKEND_REPO="${{ env.ECR_BACKEND_REPO }}"
+            export ECR_WEB_REPO="${{ env.ECR_WEB_REPO }}"
+            export IMAGE_TAG="${{ env.IMAGE_TAG }}"
             docker compose -f docker-compose.aws.yml pull
             docker compose -f docker-compose.aws.yml up -d
             docker compose -f docker-compose.aws.yml ps
