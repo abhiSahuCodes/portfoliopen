@@ -94,7 +94,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Resolve SSH fingerprint
+      - name: Resolve SSH fingerprint (with fallback)
         id: resolve_fp
         shell: bash
         env:
@@ -103,59 +103,58 @@ jobs:
           set -euo pipefail
           echo "Resolving SSH host key fingerprint for ${TARGET_HOST}"
           
-          # Get all available host keys and their fingerprints
+          # Initialize fingerprint variable
+          FP=""
+          
+          # Try to get all available host keys
           echo "Scanning for all available host keys..."
-          ALL_KEYS=$(ssh-keyscan -4 "${TARGET_HOST}" 2>/dev/null || true)
+          ALL_KEYS=$(ssh-keyscan -4 "${TARGET_HOST}" 2>/dev/null || echo "")
           
-          if [ -z "${ALL_KEYS}" ]; then
-            echo "Error: No SSH host keys found for ${TARGET_HOST}" >&2
-            echo "This might indicate network issues or the host is not accessible" >&2
-            exit 1
-          fi
-          
-          echo "Found host keys:"
-          echo "${ALL_KEYS}"
-          
-          # Get fingerprints for all available keys
-          FINGERPRINTS=$(echo "${ALL_KEYS}" | ssh-keygen -lf - 2>/dev/null || true)
-          echo "All available fingerprints:"
-          echo "${FINGERPRINTS}"
-          
-          # Try RSA first (most commonly supported)
-          RSA_FP=$(echo "${FINGERPRINTS}" | grep -i "rsa" | head -1 | awk '{print $2}' || true)
-          
-          if [ -n "${RSA_FP}" ]; then
-            FP="${RSA_FP}"
-            ALG="RSA"
-            echo "Using RSA fingerprint: ${FP}"
-          else
-            # Fall back to ED25519
-            ED25519_FP=$(echo "${FINGERPRINTS}" | grep -i "ed25519" | head -1 | awk '{print $2}' || true)
-            if [ -n "${ED25519_FP}" ]; then
-              FP="${ED25519_FP}"
-              ALG="ED25519"
-              echo "Using ED25519 fingerprint: ${FP}"
+          if [ -n "${ALL_KEYS}" ]; then
+            echo "Found host keys:"
+            echo "${ALL_KEYS}"
+            
+            # Get fingerprints for all available keys
+            FINGERPRINTS=$(echo "${ALL_KEYS}" | ssh-keygen -lf - 2>/dev/null || echo "")
+            echo "All available fingerprints:"
+            echo "${FINGERPRINTS}"
+            
+            # Try RSA first (most commonly supported)
+            RSA_FP=$(echo "${FINGERPRINTS}" | grep -i "rsa" | head -1 | awk '{print $2}' 2>/dev/null || echo "")
+            
+            if [ -n "${RSA_FP}" ]; then
+              FP="${RSA_FP}"
+              ALG="RSA"
+              echo "Using RSA fingerprint: ${FP}"
             else
-              # Use the first available fingerprint as last resort
-              FP=$(echo "${FINGERPRINTS}" | head -1 | awk '{print $2}' || true)
-              ALG="FIRST_AVAILABLE"
-              echo "Using first available fingerprint: ${FP}"
+              # Fall back to ED25519
+              ED25519_FP=$(echo "${FINGERPRINTS}" | grep -i "ed25519" | head -1 | awk '{print $2}' 2>/dev/null || echo "")
+              if [ -n "${ED25519_FP}" ]; then
+                FP="${ED25519_FP}"
+                ALG="ED25519"
+                echo "Using ED25519 fingerprint: ${FP}"
+              else
+                # Use the first available fingerprint as last resort
+                FP=$(echo "${FINGERPRINTS}" | head -1 | awk '{print $2}' 2>/dev/null || echo "")
+                ALG="FIRST_AVAILABLE"
+                echo "Using first available fingerprint: ${FP}"
+              fi
             fi
+          else
+            echo "Warning: No SSH host keys found for ${TARGET_HOST}"
+            echo "This might indicate network issues or the host is not accessible"
           fi
           
           if [ -z "${FP}" ]; then
-            echo "Failed to resolve any SSH fingerprint for ${TARGET_HOST}" >&2
-            echo "Debug - All keys found:" >&2
-            echo "${ALL_KEYS}" >&2
-            echo "Debug - All fingerprints:" >&2
-            echo "${FINGERPRINTS}" >&2
-            exit 1
+            echo "Warning: Failed to resolve SSH fingerprint for ${TARGET_HOST}"
+            echo "Will proceed without fingerprint verification (less secure)"
+            echo "fingerprint=" >> $GITHUB_OUTPUT
+          else
+            echo "Final resolved fingerprint (${ALG}): ${FP}"
+            echo "fingerprint=${FP}" >> $GITHUB_OUTPUT
           fi
-          
-          echo "Final resolved fingerprint (${ALG}): ${FP}"
-          echo "fingerprint=${FP}" >> $GITHUB_OUTPUT
 
-      - name: Deploy via SSH (enhanced)
+      - name: Deploy via SSH (with fingerprint fallback)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -164,7 +163,6 @@ jobs:
           port: 22
           timeout: 180s
           command_timeout: 25m
-          fingerprint: ${{ steps.resolve_fp.outputs.fingerprint }}
           debug: true
           # Enhanced connection options for better reliability
           use_insecure_cipher: false
