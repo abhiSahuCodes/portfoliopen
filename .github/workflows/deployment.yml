@@ -102,58 +102,132 @@ jobs:
         run: |
           set -euo pipefail
           echo "Resolving SSH host key fingerprint for ${TARGET_HOST}"
-          echo "Attempting rsa first"
-          RSA_LINES=$(ssh-keyscan -4 -t rsa "${TARGET_HOST}" 2>/dev/null)
-          RSA_FP=$(echo "${RSA_LINES}" | ssh-keygen -lf - 2>/dev/null | awk 'NR==1 {print $2}')
+          
+          # Get all available host keys and their fingerprints
+          echo "Scanning for all available host keys..."
+          ALL_KEYS=$(ssh-keyscan -4 "${TARGET_HOST}" 2>/dev/null || true)
+          
+          if [ -z "${ALL_KEYS}" ]; then
+            echo "Error: No SSH host keys found for ${TARGET_HOST}" >&2
+            echo "This might indicate network issues or the host is not accessible" >&2
+            exit 1
+          fi
+          
+          echo "Found host keys:"
+          echo "${ALL_KEYS}"
+          
+          # Get fingerprints for all available keys
+          FINGERPRINTS=$(echo "${ALL_KEYS}" | ssh-keygen -lf - 2>/dev/null || true)
+          echo "All available fingerprints:"
+          echo "${FINGERPRINTS}"
+          
+          # Try RSA first (most commonly supported)
+          RSA_FP=$(echo "${FINGERPRINTS}" | grep -i "rsa" | head -1 | awk '{print $2}' || true)
+          
           if [ -n "${RSA_FP}" ]; then
             FP="${RSA_FP}"
             ALG="RSA"
+            echo "Using RSA fingerprint: ${FP}"
           else
-            echo "ssh-rsa not found, falling back to ed25519"
-            ED25519_LINES=$(ssh-keyscan -4 -t ed25519 "${TARGET_HOST}" 2>/dev/null)
-            ED25519_FP=$(echo "${ED25519_LINES}" | ssh-keygen -lf - 2>/dev/null | awk 'NR==1 {print $2}')
-            FP="${ED25519_FP:-}"
-            ALG="ED25519"
+            # Fall back to ED25519
+            ED25519_FP=$(echo "${FINGERPRINTS}" | grep -i "ed25519" | head -1 | awk '{print $2}' || true)
+            if [ -n "${ED25519_FP}" ]; then
+              FP="${ED25519_FP}"
+              ALG="ED25519"
+              echo "Using ED25519 fingerprint: ${FP}"
+            else
+              # Use the first available fingerprint as last resort
+              FP=$(echo "${FINGERPRINTS}" | head -1 | awk '{print $2}' || true)
+              ALG="FIRST_AVAILABLE"
+              echo "Using first available fingerprint: ${FP}"
+            fi
           fi
+          
           if [ -z "${FP}" ]; then
-            echo "Failed to resolve SSH fingerprint for ${TARGET_HOST}" >&2
-          echo "Debug output (rsa scan):" >&2
-          echo "${RSA_LINES}" >&2
-          echo "Debug output (ed25519 scan):" >&2
-          echo "${ED25519_LINES:-<empty>}" >&2
+            echo "Failed to resolve any SSH fingerprint for ${TARGET_HOST}" >&2
+            echo "Debug - All keys found:" >&2
+            echo "${ALL_KEYS}" >&2
+            echo "Debug - All fingerprints:" >&2
+            echo "${FINGERPRINTS}" >&2
             exit 1
           fi
-          echo "Resolved fingerprint (${ALG}): ${FP}"
+          
+          echo "Final resolved fingerprint (${ALG}): ${FP}"
           echo "fingerprint=${FP}" >> $GITHUB_OUTPUT
 
-      - name: Deploy via SSH (hardened)
+      - name: Deploy via SSH (enhanced)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          timeout: 120s
-          command_timeout: 20m
+          timeout: 180s
+          command_timeout: 25m
           fingerprint: ${{ steps.resolve_fp.outputs.fingerprint }}
           debug: true
+          # Enhanced connection options for better reliability
+          use_insecure_cipher: false
+          sync: false
           script: |
             set -euo pipefail
+            echo "=== Starting deployment process ==="
+            echo "Host: $(hostname)"
+            echo "User: $(whoami)"
+            echo "Working directory: $(pwd)"
+            
             # Force IPv4 by using Public IPv4 host in EC2_HOST secret
             AWS_REGION="${{ env.AWS_REGION }}"
+            echo "AWS Region: ${AWS_REGION}"
+            
+            # Get AWS account info
             ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
             ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-            echo "Logging into ECR: ${ECR_REGISTRY}"
+            echo "ECR Registry: ${ECR_REGISTRY}"
+            
+            # Login to ECR
+            echo "=== Logging into ECR ==="
             aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+            
+            # Navigate to deployment directory
+            echo "=== Navigating to deployment directory ==="
             cd "${{ secrets.EC2_REPO_DIR }}"
+            echo "Current directory: $(pwd)"
+            
             # Optionally refresh env from SSM parameters if path is provided
             if [ -n "${{ secrets.SSM_PATH_BACKEND }}" ]; then
+              echo "=== Fetching environment variables from SSM ==="
               bash ./deploy/scripts/fetch_env.sh --ssm-path "${{ secrets.SSM_PATH_BACKEND }}" --region "${AWS_REGION}"
+            else
+              echo "=== No SSM path provided, skipping env fetch ==="
             fi
+            
+            # Set environment variables for docker-compose
+            echo "=== Setting environment variables ==="
             export ECR_REGISTRY="${ECR_REGISTRY}"
             export ECR_BACKEND_REPO="${{ env.ECR_BACKEND_REPO }}"
             export ECR_WEB_REPO="${{ env.ECR_WEB_REPO }}"
             export IMAGE_TAG="${{ env.IMAGE_TAG }}"
+            
+            echo "ECR_REGISTRY: ${ECR_REGISTRY}"
+            echo "ECR_BACKEND_REPO: ${ECR_BACKEND_REPO}"
+            echo "ECR_WEB_REPO: ${ECR_WEB_REPO}"
+            echo "IMAGE_TAG: ${IMAGE_TAG}"
+            
+            # Pull latest images
+            echo "=== Pulling latest Docker images ==="
             docker compose -f docker-compose.aws.yml pull
+            
+            # Deploy services
+            echo "=== Deploying services ==="
             docker compose -f docker-compose.aws.yml up -d
+            
+            # Check service status
+            echo "=== Checking service status ==="
             docker compose -f docker-compose.aws.yml ps
+            
+            # Show logs for debugging (last 20 lines)
+            echo "=== Recent logs ==="
+            docker compose -f docker-compose.aws.yml logs --tail=20
+            
+            echo "=== Deployment completed successfully ==="
