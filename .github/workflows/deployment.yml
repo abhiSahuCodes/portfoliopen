@@ -102,25 +102,25 @@ jobs:
         run: |
           set -euo pipefail
           echo "Resolving SSH host key fingerprint for ${TARGET_HOST}"
-          echo "Attempting ssh-ed25519 first"
-          ED25519_LINES=$(ssh-keyscan -4 -t ed25519 "${TARGET_HOST}" 2>/dev/null)
-          ED25519_FP=$(echo "${ED25519_LINES}" | ssh-keygen -lf - 2>/dev/null | awk 'NR==1 {print $2}')
-          if [ -n "${ED25519_FP}" ]; then
-            FP="${ED25519_FP}"
-            ALG="ED25519"
-          else
-            echo "ssh-ed25519 not found, falling back to rsa"
-            RSA_LINES=$(ssh-keyscan -4 -t rsa "${TARGET_HOST}" 2>/dev/null)
-            RSA_FP=$(echo "${RSA_LINES}" | ssh-keygen -lf - 2>/dev/null | awk 'NR==1 {print $2}')
-            FP="${RSA_FP:-}"
+          echo "Attempting rsa first"
+          RSA_LINES=$(ssh-keyscan -4 -t rsa "${TARGET_HOST}" 2>/dev/null)
+          RSA_FP=$(echo "${RSA_LINES}" | ssh-keygen -lf - 2>/dev/null | awk 'NR==1 {print $2}')
+          if [ -n "${RSA_FP}" ]; then
+            FP="${RSA_FP}"
             ALG="RSA"
+          else
+            echo "ssh-rsa not found, falling back to ed25519"
+            ED25519_LINES=$(ssh-keyscan -4 -t ed25519 "${TARGET_HOST}" 2>/dev/null)
+            ED25519_FP=$(echo "${ED25519_LINES}" | ssh-keygen -lf - 2>/dev/null | awk 'NR==1 {print $2}')
+            FP="${ED25519_FP:-}"
+            ALG="ED25519"
           fi
           if [ -z "${FP}" ]; then
             echo "Failed to resolve SSH fingerprint for ${TARGET_HOST}" >&2
-            echo "Debug output (ed25519 scan):" >&2
-            echo "${ED25519_LINES}" >&2
-            echo "Debug output (rsa scan):" >&2
-            echo "${RSA_LINES:-<empty>}" >&2
+          echo "Debug output (rsa scan):" >&2
+          echo "${RSA_LINES}" >&2
+          echo "Debug output (ed25519 scan):" >&2
+          echo "${ED25519_LINES:-<empty>}" >&2
             exit 1
           fi
           echo "Resolved fingerprint (${ALG}): ${FP}"
