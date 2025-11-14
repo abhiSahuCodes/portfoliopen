@@ -38,5 +38,8 @@ Thumbs.db
 ngrok.yml
 ngrok.exe
 
+# Features
+features.md
+
 # Deployment
 DEPLOYMENT.md
