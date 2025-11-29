@@ -1,0 +1,231 @@
+name: Deploy (AWS)
+
+on:
+  push:
+    branches:
+      - aws-deploy
+  pull_request:
+    branches:
+      - aws-deploy
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}           # e.g., 145400477079.dkr.ecr.ap-south-1.amazonaws.com
+      ECR_BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}   # e.g., portfoliopen-backend
+      ECR_WEB_REPO: ${{ secrets.ECR_WEB_REPO }}           # e.g., portfoliopen-frontend
+      IMAGE_TAG: aws-deploy-${{ github.sha }}
+    outputs:
+      image_tag: ${{ steps.set_tag.outputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Derive ECR registry host
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+          echo "ECR_REGISTRY=${ACCOUNT_ID}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
+
+      - name: Ensure ECR repositories exist
+        run: |
+          for repo in "${{ env.ECR_BACKEND_REPO }}" "${{ env.ECR_WEB_REPO }}"; do
+            aws ecr describe-repositories --repository-names "$repo" >/dev/null 2>&1 || \
+              aws ecr create-repository --repository-name "$repo" >/dev/null
+          done
+    
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tag output
+        id: set_tag
+        run: echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Backend (linux/arm64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_BACKEND_REPO }}:${{ env.IMAGE_TAG }} \
+            -f backend/Dockerfile \
+            ./backend \
+            --push
+
+      - name: Build & Push Web (linux/arm64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_WEB_REPO }}:${{ env.IMAGE_TAG }} \
+            -f frontend/Dockerfile \
+            ./frontend \
+            --push
+
+  deploy-ec2:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}
+      ECR_WEB_REPO: ${{ secrets.ECR_WEB_REPO }}
+      IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+      EC2_REPO_DIR: ${{ secrets.EC2_REPO_DIR }}
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve SSH fingerprint (with fallback)
+        id: resolve_fp
+        shell: bash
+        env:
+          TARGET_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          set -euo pipefail
+          echo "Resolving SSH host key fingerprint for ${TARGET_HOST}"
+          
+          # Initialize fingerprint variable
+          FP=""
+          
+          # Try to get all available host keys
+          echo "Scanning for all available host keys..."
+          ALL_KEYS=$(ssh-keyscan -4 "${TARGET_HOST}" 2>/dev/null || echo "")
+          
+          if [ -n "${ALL_KEYS}" ]; then
+            echo "Found host keys:"
+            echo "${ALL_KEYS}"
+            
+            # Get fingerprints for all available keys
+            FINGERPRINTS=$(echo "${ALL_KEYS}" | ssh-keygen -lf - 2>/dev/null || echo "")
+            echo "All available fingerprints:"
+            echo "${FINGERPRINTS}"
+            
+            # Try RSA first (most commonly supported)
+            RSA_FP=$(echo "${FINGERPRINTS}" | grep -i "rsa" | head -1 | awk '{print $2}' 2>/dev/null || echo "")
+            
+            if [ -n "${RSA_FP}" ]; then
+              FP="${RSA_FP}"
+              ALG="RSA"
+              echo "Using RSA fingerprint: ${FP}"
+            else
+              # Fall back to ED25519
+              ED25519_FP=$(echo "${FINGERPRINTS}" | grep -i "ed25519" | head -1 | awk '{print $2}' 2>/dev/null || echo "")
+              if [ -n "${ED25519_FP}" ]; then
+                FP="${ED25519_FP}"
+                ALG="ED25519"
+                echo "Using ED25519 fingerprint: ${FP}"
+              else
+                # Use the first available fingerprint as last resort
+                FP=$(echo "${FINGERPRINTS}" | head -1 | awk '{print $2}' 2>/dev/null || echo "")
+                ALG="FIRST_AVAILABLE"
+                echo "Using first available fingerprint: ${FP}"
+              fi
+            fi
+          else
+            echo "Warning: No SSH host keys found for ${TARGET_HOST}"
+            echo "This might indicate network issues or the host is not accessible"
+          fi
+          
+          if [ -z "${FP}" ]; then
+            echo "Warning: Failed to resolve SSH fingerprint for ${TARGET_HOST}"
+            echo "Will proceed without fingerprint verification (less secure)"
+            echo "fingerprint=" >> $GITHUB_OUTPUT
+          else
+            echo "Final resolved fingerprint (${ALG}): ${FP}"
+            echo "fingerprint=${FP}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy via SSH (with fingerprint fallback)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          timeout: 180s
+          command_timeout: 25m
+          debug: true
+          # Enhanced connection options for better reliability
+          use_insecure_cipher: false
+          sync: false
+          script: |
+            set -euo pipefail
+            echo "=== Starting deployment process ==="
+            echo "Host: $(hostname)"
+            echo "User: $(whoami)"
+            echo "Working directory: $(pwd)"
+            
+            # Force IPv4 by using Public IPv4 host in EC2_HOST secret
+            AWS_REGION="${{ env.AWS_REGION }}"
+            echo "AWS Region: ${AWS_REGION}"
+            
+            # Get AWS account info
+            ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+            ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+            echo "ECR Registry: ${ECR_REGISTRY}"
+            
+            # Login to ECR
+            echo "=== Logging into ECR ==="
+            aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+            
+            # Navigate to deployment directory
+            echo "=== Navigating to deployment directory ==="
+            cd "${{ secrets.EC2_REPO_DIR }}"
+            echo "Current directory: $(pwd)"
+            
+            # Optionally refresh env from SSM parameters if path is provided
+            if [ -n "${{ secrets.SSM_PATH_BACKEND }}" ]; then
+              echo "=== Fetching environment variables from SSM ==="
+              bash ./deploy/scripts/fetch_env.sh --ssm-path "${{ secrets.SSM_PATH_BACKEND }}" --region "${AWS_REGION}"
+            else
+              echo "=== No SSM path provided, skipping env fetch ==="
+            fi
+            
+            # Set environment variables for docker-compose
+            echo "=== Setting environment variables ==="
+            export ECR_REGISTRY="${ECR_REGISTRY}"
+            export ECR_BACKEND_REPO="${{ env.ECR_BACKEND_REPO }}"
+            export ECR_WEB_REPO="${{ env.ECR_WEB_REPO }}"
+            export IMAGE_TAG="${{ env.IMAGE_TAG }}"
+            
+            echo "ECR_REGISTRY: ${ECR_REGISTRY}"
+            echo "ECR_BACKEND_REPO: ${ECR_BACKEND_REPO}"
+            echo "ECR_WEB_REPO: ${ECR_WEB_REPO}"
+            echo "IMAGE_TAG: ${IMAGE_TAG}"
+            
+            # Pull latest images
+            echo "=== Pulling latest Docker images ==="
+            docker-compose -f docker-compose.aws.yml pull
+            
+            # Deploy services
+            echo "=== Deploying services ==="
+            docker-compose -f docker-compose.aws.yml up -d
+            
+            # Check service status
+            echo "=== Checking service status ==="
+            docker-compose -f docker-compose.aws.yml ps
+            
+            # Show logs for debugging (last 20 lines)
+            echo "=== Recent logs ==="
+            docker-compose -f docker-compose.aws.yml logs --tail=20
+            
+            echo "=== Deployment completed successfully ==="

@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { BASE_URL } from '../lib/api/client';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = `${BASE_URL}/api`;
 
 // Create axios instance with auth token
 const createAuthenticatedRequest = () => {
@@ -18,7 +20,7 @@ const createAuthenticatedRequest = () => {
 export const createPaymentOrder = async (amount, currency = 'INR') => {
   try {
     const api = createAuthenticatedRequest();
-    const response = await api.post('/api/payment/create-order', {
+    const response = await api.post('/payment/create-order', {
       amount,
       currency
     });
@@ -33,7 +35,7 @@ export const createPaymentOrder = async (amount, currency = 'INR') => {
 export const verifyPayment = async (paymentData) => {
   try {
     const api = createAuthenticatedRequest();
-    const response = await api.post('/api/payment/verify', paymentData);
+    const response = await api.post('/payment/verify', paymentData);
     return response.data;
   } catch (error) {
     console.error('Error verifying payment:', error);
@@ -45,7 +47,7 @@ export const verifyPayment = async (paymentData) => {
 export const getPaymentStatus = async (paymentId) => {
   try {
     const api = createAuthenticatedRequest();
-    const response = await api.get(`/api/payment/status/${paymentId}`);
+    const response = await api.get(`/payment/status/${paymentId}`);
     return response.data;
   } catch (error) {
     console.error('Error getting payment status:', error);

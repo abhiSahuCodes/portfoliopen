@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-package-lock.json
+# Allow lockfiles for reproducible builds
+# package-lock.json
 
 # Environment variables
 .env
@@ -38,3 +39,8 @@ ngrok.yml
 ngrok.exe
 
 features.md
+# Features
+features.md
+
+# Deployment
+DEPLOYMENT.md
