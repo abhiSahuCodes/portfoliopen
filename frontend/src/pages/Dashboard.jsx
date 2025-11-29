@@ -406,7 +406,7 @@ const Dashboard = () => {
                               </h2>
                               <div className="space-y-2">
                                 {section.content.email && (
-                                  <p className="flex items-center gap-2">
+                                  <p className="flex items-center gap-2 text-gray-900 dark:text-gray-900">
                                     <span className="font-medium">Email:</span>
                                     <a
                                       href={`mailto:${section.content.email}`}
@@ -417,7 +417,7 @@ const Dashboard = () => {
                                   </p>
                                 )}
                                 {section.content.phone && (
-                                  <p className="flex items-center gap-2">
+                                  <p className="flex items-center gap-2 text-gray-900 dark:text-gray-900">
                                     <span className="font-medium">Phone:</span>
                                     <a
                                       href={`tel:${section.content.phone}`}
