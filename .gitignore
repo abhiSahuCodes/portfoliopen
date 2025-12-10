@@ -36,3 +36,6 @@ Thumbs.db
 #ngrok
 ngrok.yml
 ngrok.exe
+
+#features
+features.md
