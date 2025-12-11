@@ -96,7 +96,7 @@ const skills = async (req, res) => {
 const status = async (req, res) => {
   try {
     const svc = getAIService();
-    const isConfigured = !!process.env.GEMINI_API_KEY;
+    const isConfigured = !!process.env.OPENAI_API_KEY;
     let available = [];
     try {
       available = await svc.listModels();
@@ -106,7 +106,7 @@ const status = async (req, res) => {
       success: true,
       data: {
         configured: isConfigured,
-        provider: 'gemini',
+        provider: 'openai',
         model: svc.model,
         availableModels: available,
         features: ['text_enhancement', 'skill_generation']

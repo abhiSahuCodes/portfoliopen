@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { apiEnhanceText, apiGenerateSkills } from '../../../lib/api/ai';
 import AIPromptDialog from '../../ui/ai-prompt-dialog';
+import { useToast } from '../../../hooks/use-toast';
 
 const AboutSection = ({ section, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -14,6 +15,7 @@ const AboutSection = ({ section, onUpdate }) => {
   const [showDescriptionDialog, setShowDescriptionDialog] = useState(false);
   const [showSkillsDialog, setShowSkillsDialog] = useState(false);
   const { user, subscription } = useSelector((state) => state.auth);
+  const { toast } = useToast();
   const isPro = subscription === 'pro';
 
   // Edit mode
@@ -60,6 +62,11 @@ const AboutSection = ({ section, onUpdate }) => {
       }
     } catch (error) {
       console.error('Failed to enhance description:', error);
+      toast({
+        title: 'AI Enhancement Failed',
+        description: error.message || 'Failed to enhance description. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsEnhancingDescription(false);
     }
@@ -86,6 +93,11 @@ const AboutSection = ({ section, onUpdate }) => {
       }
     } catch (error) {
       console.error('Failed to generate skills:', error);
+      toast({
+        title: 'Skill Generation Failed',
+        description: error.message || 'Failed to generate skills. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsGeneratingSkills(false);
     }

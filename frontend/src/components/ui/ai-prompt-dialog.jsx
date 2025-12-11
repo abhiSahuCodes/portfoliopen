@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ const AIPromptDialog = ({
   submitButtonText = "Generate"
 }) => {
   const [prompt, setPrompt] = useState('');
+  const { user } = useSelector((state) => state.auth);
 
   const handleSubmit = () => {
     if (prompt.trim()) {
@@ -48,7 +50,8 @@ const AIPromptDialog = ({
             {description}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+
+        <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label htmlFor="prompt">Your Input</Label>
             <Textarea
