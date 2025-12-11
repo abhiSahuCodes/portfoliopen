@@ -264,7 +264,7 @@ const PricingPage = () => {
                     </h4>
                   </div>
                   <p className="text-xs text-blue-800 dark:text-blue-200 mb-3">
-                    Use these test card details:
+                    Use this test card detail:
                   </p>
                   <div className="space-y-2 text-xs">
                     <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ const PricingPage = () => {
                       </button>
                       <span className="text-xs text-gray-500">(Visa)</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    {/* <div className="flex items-center gap-2">
                       <span className="text-blue-600 dark:text-blue-400">💳</span>
                       <span className="font-mono">2305 3242 5784 8228</span>
                       <button 
@@ -290,7 +290,7 @@ const PricingPage = () => {
                         📋
                       </button>
                       <span className="text-xs text-gray-500">(Mastercard)</span>
-                    </div>
+                    </div> */}
 
                     <p className="text-blue-600 dark:text-blue-400 text-center mt-2">
                       CVV: Any 3 digits
@@ -299,7 +299,7 @@ const PricingPage = () => {
                       Expiry: Any future date
                     </p>
                     <p className="text-blue-600 dark:text-blue-400 text-center mt-2">
-                      OTP: Any 8 digits if asked only
+                      OTP: Prefer any 4 -8 digits
                     </p>
                   </div>
                 </div>

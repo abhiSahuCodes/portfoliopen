@@ -1,307 +1,161 @@
-const { GoogleGenAI } = require("@google/genai");
+const OpenAI = require("openai");
 
 class AIService {
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY;
-    this.modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash-001";
-    this._modelChecked = false;
-    this._availableModels = null;
+    this.apiKey = process.env.OPENAI_API_KEY || "";
+    this.modelName = "gpt-5-nano";
 
     if (!this.apiKey) {
       console.warn(
-        "⚠️  Gemini API key not configured. AI features will be disabled."
+        "⚠️ OpenAI API key not configured. AI features will be disabled."
       );
-      this.genAI = null;
+      this.client = null;
     } else {
-      this.genAI = new GoogleGenAI({ apiKey: this.apiKey });
+      this.client = new OpenAI({ apiKey: this.apiKey });
     }
   }
 
-  // Get available models using new SDK
-  async listModels(force = false) {
-    if (this._availableModels && !force) return this._availableModels;
-    if (!this.genAI) return [];
-
+  async listModels() {
+    if (!this.client) return [];
     try {
-      const response = await this.genAI.models.list();
-      const modelNames = response.models ? response.models.map((model) => model.name || model.id || model) : [];
-      this._availableModels = modelNames;
-      return modelNames;
-    } catch (e) {
-      console.error("Failed to list models:", e.message);
-      // Fallback to predefined list if API call fails
-      const fallbackModels = [
-        "gemini-2.0-flash-001",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-8b", 
-        "gemini-1.5-pro",
-        "gemini-1.0-pro"
-      ];
-      this._availableModels = fallbackModels;
-      return fallbackModels;
+      const response = await this.client.models.list();
+      return response.data.map((m) => m.id);
+    } catch (error) {
+      console.error("Failed to list models:", error.message);
+      return [];
     }
   }
 
-  // Ensure to pick a model that is actually available
-  async ensureModelAvailability() {
-    if (this._modelChecked) return this.model;
-    this._modelChecked = true;
-
-    const preferred = [
-      this.model,
-      
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b",
-      "gemini-1.5-pro",
-      "gemini-1.0-pro",
-    ];
-
-    const available = await this.listModels();
-    if (!available.length) return this.model; // fallback to configured default
-
-    const found = preferred.find((m) => available.includes(m));
-    if (found) this.model = found;
-    return this.model;
-  }
-
+  // Core request handler
   async makeRequest(prompt, options = {}) {
-    if (!this.genAI) {
-      throw new Error("AI service not properly initialized");
-    }
+    if (!this.client) throw new Error("AI service not initialized");
+
+    const maxTokens = options.maxTokens || 2000;
+
+    // Log request details
+    console.log(
+      `🚀 [AIService] Requesting OpenAI | Model: ${this.modelName} | Max Tokens: ${maxTokens}`
+    );
 
     try {
-      await this.ensureModelAvailability();
-
-      const generationConfig = {
-        temperature: options.temperature || 0.7,
-        topP: options.topP || 0.8,
-        topK: options.topK || 40,
-        maxOutputTokens: options.maxTokens || 1000,
-        ...options.generationConfig,
-      };
-
-      const result = await this.genAI.models.generateContent({
+      const completion = await this.client.chat.completions.create({
         model: this.modelName,
-        contents: prompt,
-        config: generationConfig,
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: maxTokens,
       });
 
-      const content = result.text;
+      const content = completion.choices[0]?.message?.content?.trim();
 
-      if (!content || content.trim().length === 0) {
-        const err = new Error("AI service returned empty content");
-        err.status = 502;
-        err.code = "EMPTY_CONTENT";
-        throw err;
+      if (!content) {
+        console.error(
+          "❌ AI Response was empty. Full response:",
+          JSON.stringify(completion, null, 2)
+        );
+        throw new Error("Empty response from AI");
       }
 
-      return content.trim();
+      // Log success
+      console.log(
+        `✅ [AIService] Success! Received ${content.split(" ").length} words.`
+      );
+
+      return content;
     } catch (error) {
-      console.error("Gemini API Error:", error.message);
+      console.error(
+        `🔥 [AIService] Error with model ${this.modelName}:`,
+        error.message
+      );
 
-      // Normalize errors
-      let status = 500;
-      let code = "AI_PROVIDER_ERROR";
-      let message = "Failed to generate AI content. Please try again.";
-
-      if (error.message.includes("API_KEY_INVALID")) {
-        status = 401;
-        code = "PROVIDER_UNAUTHORIZED";
-        message = "AI provider authentication failed. Please check API key.";
-      } else if (error.message.includes("RATE_LIMIT_EXCEEDED")) {
-        status = 429;
-        code = "RATE_LIMITED";
-        message = "AI provider rate limit reached. Please wait and try again.";
-      } else if (error.message.includes("SAFETY")) {
-        status = 400;
-        code = "CONTENT_BLOCKED";
-        message = "Content was blocked by safety filters";
-      } else if (error.message.includes("quota")) {
-        status = 402;
-        code = "INSUFFICIENT_CREDITS";
-        message =
-          "Insufficient AI provider credits. Please add credits or try later.";
-      }
-
-      const err = new Error(message);
-      err.status = status;
-      err.code = code;
-      throw err;
+      const errObj = new Error(error.message || "AI Request Failed");
+      errObj.status = error.status || 500;
+      errObj.code = error.code || "AI_ERROR";
+      throw errObj;
     }
   }
 
-  // Sanitize model output and enforce word limits
-  sanitizeEnhancedText(text, minWords = 40, maxWords = 80) {
+  sanitizeOutput(text) {
     if (!text) return "";
-
-    // Strip code fences and quotes
-    let cleaned = String(text)
-      .replace(/```[\s\S]*?```/g, " ")
-      .replace(/^\s*"|"\s*$/g, "")
-      .replace(/^\s*'|'\s*$/g, "")
-      .replace(/^[\s\S]*?(?=\w)/, "") // remove any leading non-word chars/meta
-      .replace(/Guidelines:?[\s\S]*/i, "") // drop guideline blocks if echoed
-      .replace(/^(?:The user wants|User input|Instruction|Task):?[\s\S]*/i, "");
-
-    // Remove list markers and excessive newlines
-    cleaned = cleaned
-      .split(/\r?\n/)
-      .filter((line) => !/^(\s*[-*\d+\.])/i.test(line.trim()))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // Enforce word limits
-    const words = cleaned.split(/\s+/).filter(Boolean);
-    if (words.length > maxWords) {
-      cleaned = words.slice(0, maxWords).join(" ");
-      if (!/[.!?]$/.test(cleaned)) cleaned += ".";
-      return cleaned;
+    let clean = text.replace(/^["']|["']$/g, "").trim();
+    const words = clean.split(/\s+/);
+    if (words.length > 60) {
+      clean = words.slice(0, 60).join(" ");
+      if (!/[.!?]$/.test(clean)) clean += ".";
     }
-
-    if (words.length < minWords) {
-      const pads = [
-        " I focus on clarity, usability, and performance to deliver reliable results.",
-        " I prioritize accessibility, responsive design, and clean, maintainable code.",
-        " My work balances technical rigor with thoughtful user experience and collaboration.",
-      ];
-      let i = 0;
-      while (cleaned.split(/\s+/).length < minWords && i < pads.length) {
-        cleaned += pads[i++];
-      }
-      const finalWords = cleaned.split(/\s+/).filter(Boolean);
-      if (finalWords.length > maxWords) {
-        cleaned = finalWords.slice(0, maxWords).join(" ");
-        if (!/[.!?]$/.test(cleaned)) cleaned += ".";
-      }
-    }
-
-    if (!/[.!?]$/.test(cleaned)) cleaned += ".";
-    return cleaned;
+    return clean;
   }
 
-  async enhanceDescription(userInput, context = "portfolio description") {
-    const prompt = `You are a professional portfolio content writer. Transform user input into a polished, engaging, and professional ${context}.
+  async enhanceDescription(userInput, context = "professional summary") {
+    // UPDATED PROMPT: Explicitly asks for First Person
+    const prompt = `You are a professional portfolio writer crafting a personal bio. Transform the following input into a polished, professional paragraph in the First Person ("I", "me", "my").
+    
+Input: "${userInput}"
 
-Strict output rules:
-- Length: 40 to 80 words
-- Output a single paragraph only
-- Return ONLY the enhanced text (no quotes, no JSON, no bullets, no explanations)
-- Keep the original meaning and tone
-- Use active voice, concise but impactful language
-- Improve clarity and flow; correct grammar and spelling
+Requirements:
+- Write strictly in the First Person (e.g., "I am a...", "My passion is...").
+- Output exactly one paragraph.
+- Length must be between 40 and 60 words.
+- Use active, professional language.`;
 
-Enhance this ${context}: ${userInput}`;
-
-    const raw = await this.makeRequest(prompt, { maxTokens: 350 });
-    return this.sanitizeEnhancedText(raw, 40, 80);
+    const rawText = await this.makeRequest(prompt, { maxTokens: 1500 });
+    return this.sanitizeOutput(rawText);
   }
 
-  // Development fallback for enhancement to avoid blocking UI when provider is unavailable
-  generateDevFallbackEnhanced(userInput, context = "portfolio description") {
-    const input = (userInput || "").toString().trim();
-    if (!input) return "";
-
-    const role = input
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/(^|[\s-])([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
-
-    let draft = `I am a ${role} crafting responsive, accessible, and performant experiences. I translate ideas into clean, maintainable interfaces and collaborate closely to ship reliable features. I emphasize clarity, usability, and modern best practices to deliver results that feel fast, consistent, and user-focused across devices.`;
-
-    return this.sanitizeEnhancedText(draft, 40, 80);
+  async enhanceAboutMe(text) {
+    return this.enhanceDescription(text, "about me section");
   }
 
-  async generateSkills(prompt, existingSkills = []) {
-    const skillsPrompt = `You are a skills recommendation expert. Based on a user's prompt or description, suggest relevant professional skills.
+  async enhanceProjectDescription(text) {
+    return this.enhanceDescription(text, "project description");
+  }
 
-Guidelines:
-- Return a JSON array of skill names only
-- Include 5-8 relevant skills
-- Focus on current, in-demand skills
-- Avoid duplicating existing skills
-- Skills should be specific and professional
-- Format: ["skill1", "skill2", "skill3", ...]
-- Return only the JSON array, no explanations
+  // UPDATED: Smarter Prompt logic
+  // UPDATED: generateSkills with higher limits and broader scope
+  async generateSkills(userInput, existingSkills = []) {
+    const prompt = `You are an expert career coach. Analyze the user's input and generate a strictly JSON array of 5-8 related professional skills.
 
-Generate skills based on this prompt: "${prompt}"
+Rules:
+1. Output strictly a JSON array of strings. No markdown, no explanations.
+2. If the input is technical (e.g., "React"), suggest complementary tech stack skills.
+3. If the input is creative/artistic (e.g., "Water Color", "Photography"), suggest relevant artistic techniques, software (like Photoshop), or principles (like Color Theory).
+4. Use standard naming conventions.
+
+Examples:
+Input: "Frontend" -> Output: ["HTML5", "CSS3", "JavaScript", "React.js", "TypeScript"]
+Input: "Water Color" -> Output: ["Color Theory", "Wet-on-Wet", "Brush Control", "Paper Texture", "Adobe Photoshop", "Illustration"]
+Input: "Management" -> Output: ["Agile", "Scrum", "JIRA", "Team Leadership", "Risk Management"]
+
+User Input: "${userInput}"
 ${
-  existingSkills.length > 0
-    ? `Existing skills to avoid duplicating: ${existingSkills.join(", ")}`
+  existingSkills.length
+    ? `Exclude these skills: ${existingSkills.join(", ")}`
     : ""
-}`;
+}
+Output:`;
 
     try {
-      const response = await this.makeRequest(skillsPrompt, { maxTokens: 200 });
-      // Extract a JSON array from the response
-      let text = response.trim();
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) text = match[0];
-      const skills = JSON.parse(text);
+      // 3000 to allow "reasoning" tokens + output tokens
+      const rawText = await this.makeRequest(prompt, { maxTokens: 3000 });
+
+      // Clean markdown code blocks if present
+      let cleanText = rawText
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+      const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : cleanText;
+
+      const skills = JSON.parse(jsonStr);
       return Array.isArray(skills) ? skills : [];
     } catch (error) {
-      console.error("Error parsing skills response:", error);
-      return this.getFallbackSkills(prompt);
+      console.error("Error parsing skills:", error);
+      // Fallback
+      return ["Communication", "Problem Solving", "Teamwork", "Creativity"];
     }
   }
 
-  getFallbackSkills(prompt) {
-    const fallbackSkills = {
-      frontend: ["HTML", "CSS", "JavaScript", "React", "Vue.js", "TypeScript"],
-      backend: [
-        "Node.js",
-        "Python",
-        "Express.js",
-        "MongoDB",
-        "PostgreSQL",
-        "REST APIs",
-      ],
-      design: [
-        "Figma",
-        "Adobe Photoshop",
-        "UI/UX Design",
-        "Wireframing",
-        "Prototyping",
-      ],
-      mobile: [
-        "React Native",
-        "Flutter",
-        "iOS Development",
-        "Android Development",
-      ],
-      data: [
-        "Python",
-        "SQL",
-        "Data Analysis",
-        "Machine Learning",
-        "Pandas",
-        "NumPy",
-      ],
-      devops: ["Docker", "AWS", "CI/CD", "Kubernetes", "Linux", "Git"],
-    };
-
-    const lowerPrompt = prompt.toLowerCase();
-    for (const [key, skills] of Object.entries(fallbackSkills)) {
-      if (lowerPrompt.includes(key)) {
-        return skills.slice(0, 6);
-      }
-    }
-
-    return [
-      "Communication",
-      "Problem Solving",
-      "Teamwork",
-      "Leadership",
-      "Time Management",
-    ];
-  }
-
-  async enhanceProjectDescription(userInput) {
-    return await this.enhanceDescription(userInput, "project description");
-  }
-
-  async enhanceAboutMe(userInput) {
-    return await this.enhanceDescription(userInput, "about me section");
+  generateDevFallbackEnhanced(userInput) {
+    return `I am a professional specifically focused on ${userInput}. I translate ideas into clean, maintainable solutions and collaborate closely to ship reliable features. I emphasize clarity, usability, and modern best practices to deliver results that feel fast, consistent, and user-focused across all platforms.`;
   }
 }
 

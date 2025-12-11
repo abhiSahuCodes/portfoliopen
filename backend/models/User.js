@@ -61,6 +61,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    aiUsage: {
+      count: { type: Number, default: 0 },
+      lastReset: { type: Date, default: Date.now },
+    },
     resetPasswordToken: {
       type: String,
       select: false,
